@@ -338,14 +338,6 @@ class _HomePageState extends State<HomePage> {
     await _load(selectedPeladaId: pelada.id);
   }
 
-  String _matchDateLabel(Partida partida) {
-    final raw = partida.dataHora ?? partida.inicio;
-    if (raw == null || raw.isEmpty) return 'Sem data';
-    final date = DateTime.tryParse(raw);
-    if (date == null) return raw;
-    return DateFormat('dd/MM - HH:mm').format(date.toLocal());
-  }
-
   Uri? _instagramUri(String? raw) {
     final value = (raw ?? '').trim();
     if (value.isEmpty) return null;
@@ -381,6 +373,7 @@ class _HomePageState extends State<HomePage> {
     final canOpenRanking = _peladaId != null && _temporadaId != null;
 
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -390,9 +383,9 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               decoration: const BoxDecoration(
-                color: Color(0xFF12171D),
+                color: Color(0xFF79C788),
                 borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(18),
+                  bottom: Radius.circular(24),
                 ),
               ),
               child: SafeArea(
@@ -403,7 +396,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: const Color(0xFF263241),
+                          backgroundColor: Colors.white.withValues(alpha: 0.26),
                           child: Text(
                             username.isNotEmpty
                                 ? username.substring(0, 1).toUpperCase()
@@ -438,17 +431,9 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (_peladas.isEmpty)
-                      const SizedBox(
-                        height: 72,
-                        child: Center(
-                          child: Text(
-                            'Nenhuma pelada encontrada',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ),
-                      )
-                    else
+                    if (_loading)
+                      const _PeladaPillsSkeleton()
+                    else if (_peladas.isNotEmpty)
                       SizedBox(
                         height: 72,
                         child: ListView.separated(
@@ -470,7 +455,9 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                         ),
-                      ),
+                      )
+                    else
+                      const SizedBox(height: 72),
                   ],
                 ),
               ),
@@ -486,11 +473,12 @@ class _HomePageState extends State<HomePage> {
                     onAction: _loading ? null : _load,
                   ),
                   const SizedBox(height: 10),
-                  if (_topPeladasAtivas.isEmpty)
-                    const CyberCard(
-                      child: Text('Nenhuma pelada ativa encontrada no feed.'),
-                    ),
-                  if (_topPeladasAtivas.isNotEmpty)
+                  if (_loading)
+                    const SizedBox(
+                      height: 178,
+                      child: _TopPeladasSkeletonList(),
+                    )
+                  else if (_topPeladasAtivas.isNotEmpty)
                     SizedBox(
                       height: 178,
                       child: ListView.separated(
@@ -516,7 +504,9 @@ class _HomePageState extends State<HomePage> {
                           );
                         },
                       ),
-                    ),
+                    )
+                  else
+                    const SizedBox(height: 178),
                   const SizedBox(height: 20),
                   _SectionHeader(
                     title: 'MVP',
@@ -528,11 +518,12 @@ class _HomePageState extends State<HomePage> {
                         : null,
                   ),
                   const SizedBox(height: 10),
-                  if (_topPlayers.isEmpty)
-                    const CyberCard(
-                      child: Text('Nenhum jogador ranqueado ainda.'),
-                    ),
-                  if (_topPlayers.isNotEmpty)
+                  if (_loading)
+                    const SizedBox(
+                      height: 196,
+                      child: _TopPlayersSkeletonList(),
+                    )
+                  else if (_topPlayers.isNotEmpty)
                     SizedBox(
                       height: 196,
                       child: ListView.separated(
@@ -559,7 +550,9 @@ class _HomePageState extends State<HomePage> {
                           );
                         },
                       ),
-                    ),
+                    )
+                  else
+                    const SizedBox(height: 196),
                   const SizedBox(height: 20),
                   _SectionHeader(
                     title: 'Ultimos jogos',
@@ -568,9 +561,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 10),
                   if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 28),
-                      child: Center(child: CircularProgressIndicator()),
+                    const SizedBox(
+                      height: 154,
+                      child: _UltimosJogosSkeletonList(),
                     ),
                   if (_error != null && !_loading)
                     CyberCard(
@@ -579,13 +572,9 @@ class _HomePageState extends State<HomePage> {
                         style: const TextStyle(color: Color(0xFFDA3F4D)),
                       ),
                     ),
-                  if (!_loading && _error == null && _recentMatches.isEmpty)
-                    const CyberCard(
-                      child: Text('Nenhuma partida recente disponivel.'),
-                    ),
                   if (!_loading && _error == null && _recentMatches.isNotEmpty)
                     SizedBox(
-                      height: 176,
+                      height: 154,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: _recentMatches.length,
@@ -595,7 +584,6 @@ class _HomePageState extends State<HomePage> {
                           return _UpcomingMatchCard(
                             partida: partida,
                             config: widget.config,
-                            dateLabel: _matchDateLabel(partida),
                             onTap: _peladaId == null
                                 ? null
                                 : () => context.go(
@@ -605,6 +593,8 @@ class _HomePageState extends State<HomePage> {
                         },
                       ),
                     ),
+                  if (!_loading && _error == null && _recentMatches.isEmpty)
+                    const SizedBox(height: 154),
                 ],
               ),
             ),
@@ -682,10 +672,12 @@ class _PeladaPill extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: const Color(0xFF1B232D),
+                color: Colors.white.withValues(alpha: 0.28),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: selected ? AppTheme.primary : Colors.transparent,
+                  color: selected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0),
                   width: 1.8,
                 ),
               ),
@@ -717,7 +709,7 @@ class _PeladaPill extends StatelessWidget {
 
   Widget _fallbackAvatar() {
     return Container(
-      color: const Color(0xFF263241),
+      color: Colors.white.withValues(alpha: 0.2),
       alignment: Alignment.center,
       child: Text(
         name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'P',
@@ -745,7 +737,7 @@ class _HeaderAction extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0xFF1A222B),
+          color: Colors.black.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Icon(icon, color: Colors.white, size: 19),
@@ -1207,13 +1199,11 @@ class _UpcomingMatchCard extends StatelessWidget {
   const _UpcomingMatchCard({
     required this.partida,
     required this.config,
-    required this.dateLabel,
     this.onTap,
   });
 
   final Partida partida;
   final AppConfig config;
-  final String dateLabel;
   final VoidCallback? onTap;
 
   Color _teamColor(String? raw) {
@@ -1323,46 +1313,23 @@ class _UpcomingMatchCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE7EBF0),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    dateLabel,
-                    style: const TextStyle(
-                      color: Color(0xFF5D6776),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                    ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    statusLabel,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -1407,32 +1374,6 @@ class _UpcomingMatchCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(
-                  Icons.stadium_rounded,
-                  size: 14,
-                  color: statusColor.withValues(alpha: 0.9),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Toque para abrir detalhes da partida',
-                    style: TextStyle(
-                      color: statusColor.withValues(alpha: 0.92),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: AppTheme.textMuted,
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -1470,4 +1411,188 @@ class _HomeTopPlayerAccumulator {
   final String nome;
   String? fotoUrl;
   int gols;
+}
+
+class _SkeletonBox extends StatelessWidget {
+  const _SkeletonBox({this.width, required this.height, this.radius = 12});
+
+  final double? width;
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE6EBF1),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+class _PeladaPillsSkeleton extends StatelessWidget {
+  const _PeladaPillsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 72,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: 6,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (_, _) => const SizedBox(
+          width: 72,
+          child: Column(
+            children: [
+              _SkeletonBox(width: 46, height: 46, radius: 23),
+              SizedBox(height: 6),
+              _SkeletonBox(width: 56, height: 10, radius: 6),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopPeladasSkeletonList extends StatelessWidget {
+  const _TopPeladasSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: 3,
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
+      itemBuilder: (_, index) {
+        return Container(
+          width: index == 0 ? 132 : 124,
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+          decoration: BoxDecoration(
+            color: index == 0
+                ? const Color(0xFFD9EDE0)
+                : const Color(0xFFFFFFFF),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: _SkeletonBox(width: 28, height: 16, radius: 10),
+              ),
+              SizedBox(height: 8),
+              _SkeletonBox(width: 50, height: 50, radius: 25),
+              SizedBox(height: 8),
+              _SkeletonBox(width: 78, height: 12, radius: 6),
+              SizedBox(height: 8),
+              _SkeletonBox(width: 90, height: 10, radius: 6),
+              Spacer(),
+              _SkeletonBox(width: double.infinity, height: 30, radius: 999),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TopPlayersSkeletonList extends StatelessWidget {
+  const _TopPlayersSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: 4,
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
+      itemBuilder: (_, index) => Container(
+        width: 154,
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SkeletonBox(width: double.infinity, height: 82, radius: 12),
+            SizedBox(height: 8),
+            _SkeletonBox(width: 98, height: 12, radius: 6),
+            SizedBox(height: 8),
+            _SkeletonBox(width: 76, height: 10, radius: 6),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _SkeletonBox(height: 20, radius: 8)),
+                SizedBox(width: 6),
+                Expanded(child: _SkeletonBox(height: 20, radius: 8)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UltimosJogosSkeletonList extends StatelessWidget {
+  const _UltimosJogosSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: 3,
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
+      itemBuilder: (_, index) => Container(
+        width: 272,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.surfaceBorderSoft),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: _SkeletonBox(width: 74, height: 18, radius: 10),
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      _SkeletonBox(width: 46, height: 46, radius: 14),
+                      SizedBox(height: 6),
+                      _SkeletonBox(width: 78, height: 10, radius: 6),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 12),
+                _SkeletonBox(width: 56, height: 24, radius: 8),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _SkeletonBox(width: 46, height: 46, radius: 14),
+                      SizedBox(height: 6),
+                      _SkeletonBox(width: 78, height: 10, radius: 6),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
