@@ -52,7 +52,10 @@ class _TemporadaEstatisticasPageState extends State<TemporadaEstatisticasPage> {
     });
     try {
       final result = await Future.wait([
-        widget.temporadasDataSource.getTemporada(widget.temporadaId),
+        widget.temporadasDataSource.getTemporada(
+          widget.temporadaId,
+          peladaId: widget.peladaId,
+        ),
         widget.rankingsDataSource.getRankingTimes(widget.temporadaId),
         widget.rankingsDataSource.getRankingArtilheiros(widget.temporadaId),
         widget.rankingsDataSource.getRankingAssistencias(widget.temporadaId),

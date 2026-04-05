@@ -1,4 +1,4 @@
-package com.example.frontcopa_flutter
+package com.iagocarioca.minhacopa
 
 import io.flutter.embedding.android.FlutterActivity
 

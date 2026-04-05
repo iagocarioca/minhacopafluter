@@ -1158,7 +1158,8 @@ class _TeamTabSelector extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppTheme.surfaceAlt,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.surfaceBorderSoft),
       ),
       child: Row(
         children: [
@@ -1215,7 +1216,7 @@ class _TeamTabItem extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12.5,
-              fontWeight: FontWeight.w700,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
               color: selected ? AppTheme.textPrimary : AppTheme.textMuted,
             ),
           ),
@@ -1308,10 +1309,10 @@ class _ActionPillButton extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
       width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: enabled ? background : AppTheme.surfaceAlt,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: enabled ? Colors.transparent : AppTheme.surfaceBorder,
         ),
@@ -1337,7 +1338,7 @@ class _ActionPillButton extends StatelessWidget {
       ignoring: !enabled,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: content,
       ),
     );
@@ -1381,20 +1382,20 @@ class _PickerFieldButtonState extends State<_PickerFieldButton> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               onTap: widget.enabled ? () => widget.onTap() : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
+                  horizontal: 14,
+                  vertical: 11,
                 ),
                 decoration: BoxDecoration(
                   color: widget.enabled
                       ? (active ? AppTheme.surface : AppTheme.surfaceAlt)
                       : AppTheme.surfaceAlt.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: active ? AppTheme.primary : AppTheme.surfaceBorder,
                   ),

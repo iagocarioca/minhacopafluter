@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:frontcopa_flutter/core/config/app_config.dart';
+import 'package:frontcopa_flutter/core/theme/app_theme.dart';
 import 'package:frontcopa_flutter/core/widgets/app_back_button.dart';
 import 'package:frontcopa_flutter/core/widgets/app_top_bar.dart';
 import 'package:frontcopa_flutter/core/widgets/cyber_badge.dart';
@@ -95,6 +98,96 @@ class _TimeDetailPageState extends State<TimeDetailPage> {
 
   String _jogadorLabel(Jogador jogador) {
     return jogador.apelido.isNotEmpty ? jogador.apelido : jogador.nomeCompleto;
+  }
+
+  String _jogadorInicial(Jogador jogador) {
+    final label = _jogadorLabel(jogador).trim();
+    if (label.isEmpty) return 'J';
+    return label.substring(0, 1).toUpperCase();
+  }
+
+  List<Jogador> _sortedJogadoresForField(List<Jogador> jogadores) {
+    final list = List<Jogador>.from(jogadores);
+    list.sort((a, b) {
+      if (a.capitao == true && b.capitao != true) return -1;
+      if (a.capitao != true && b.capitao == true) return 1;
+      return _jogadorLabel(
+        a,
+      ).toLowerCase().compareTo(_jogadorLabel(b).toLowerCase());
+    });
+    return list;
+  }
+
+  Future<void> _openJogadorActions(Jogador jogador) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (context) {
+        final fotoUrl = widget.config.resolveApiImageUrl(jogador.fotoUrl);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundImage: fotoUrl != null
+                        ? NetworkImage(fotoUrl)
+                        : null,
+                    child: fotoUrl == null
+                        ? Text(_jogadorInicial(jogador))
+                        : null,
+                  ),
+                  title: Text(_jogadorLabel(jogador)),
+                  subtitle: Text(jogador.posicao ?? 'Sem posicao'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.edit_rounded),
+                  title: const Text('Editar posicao'),
+                  onTap: () => Navigator.of(context).pop('edit_posicao'),
+                ),
+                if (jogador.capitao != true)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.emoji_events_rounded,
+                      color: Color(0xFFD97706),
+                    ),
+                    title: const Text('Tornar capitao'),
+                    onTap: () => Navigator.of(context).pop('capitao'),
+                  ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFDC3B3B),
+                  ),
+                  title: const Text('Remover do time'),
+                  onTap: () => Navigator.of(context).pop('remover'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (action == null || !mounted) return;
+    if (action == 'edit_posicao') {
+      await _updatePosicao(jogador);
+      return;
+    }
+    if (action == 'capitao') {
+      await _toggleCapitao(jogador);
+      return;
+    }
+    if (action == 'remover') {
+      await _removeJogador(jogador);
+      return;
+    }
   }
 
   Future<void> _openEditTeamDialog() async {
@@ -390,6 +483,7 @@ class _TimeDetailPageState extends State<TimeDetailPage> {
     final time = _time;
     final escudoUrl = widget.config.resolveApiImageUrl(time?.escudoUrl);
     final color = _parseColor(time?.cor);
+    final jogadoresOrdenados = _sortedJogadoresForField(_jogadoresTime);
 
     return Scaffold(
       appBar: AppTopBar(
@@ -478,9 +572,14 @@ class _TimeDetailPageState extends State<TimeDetailPage> {
                   Row(
                     children: [
                       Text(
-                        'Jogadores',
+                        'Campo',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(width: 8),
+                      CyberBadge(
+                        label: '${_jogadoresTime.length} jogadores',
+                        variant: CyberBadgeVariant.info,
                       ),
                       const Spacer(),
                       TextButton.icon(
@@ -494,75 +593,13 @@ class _TimeDetailPageState extends State<TimeDetailPage> {
                   if (_jogadoresTime.isEmpty)
                     const CyberCard(child: Text('Nenhum jogador no time.'))
                   else
-                    ..._jogadoresTime.map((jogador) {
-                      final fotoUrl = widget.config.resolveApiImageUrl(
-                        jogador.fotoUrl,
-                      );
-                      return CyberCard(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: EdgeInsets.zero,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: fotoUrl != null
-                                ? NetworkImage(fotoUrl)
-                                : null,
-                            child: fotoUrl == null
-                                ? Text(
-                                    _jogadorLabel(
-                                      jogador,
-                                    ).substring(0, 1).toUpperCase(),
-                                  )
-                                : null,
-                          ),
-                          title: Row(
-                            children: [
-                              Expanded(child: Text(_jogadorLabel(jogador))),
-                              if (jogador.capitao == true)
-                                const CyberBadge(
-                                  label: 'Capitao',
-                                  variant: CyberBadgeVariant.info,
-                                ),
-                            ],
-                          ),
-                          subtitle: Text(jogador.posicao ?? 'Sem posicao'),
-                          trailing: Wrap(
-                            spacing: 6,
-                            children: [
-                              IconButton(
-                                onPressed: _saving
-                                    ? null
-                                    : () => _updatePosicao(jogador),
-                                icon: const Icon(Icons.edit_rounded, size: 18),
-                                tooltip: 'Editar posicao',
-                              ),
-                              if (jogador.capitao != true)
-                                IconButton(
-                                  onPressed: _saving
-                                      ? null
-                                      : () => _toggleCapitao(jogador),
-                                  icon: const Icon(
-                                    Icons.emoji_events_rounded,
-                                    size: 18,
-                                    color: Color(0xFFD97706),
-                                  ),
-                                  tooltip: 'Tornar capitao',
-                                ),
-                              IconButton(
-                                onPressed: _saving
-                                    ? null
-                                    : () => _removeJogador(jogador),
-                                icon: const Icon(
-                                  Icons.delete_outline_rounded,
-                                  size: 18,
-                                  color: Color(0xFFDC3B3B),
-                                ),
-                                tooltip: 'Remover',
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+                    _TeamPlayersField(
+                      jogadores: jogadoresOrdenados,
+                      config: widget.config,
+                      jogadorLabel: _jogadorLabel,
+                      saving: _saving,
+                      onTapJogador: _openJogadorActions,
+                    ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => context.push(
@@ -576,4 +613,440 @@ class _TimeDetailPageState extends State<TimeDetailPage> {
             ),
     );
   }
+}
+
+class _TeamPlayersField extends StatelessWidget {
+  const _TeamPlayersField({
+    required this.jogadores,
+    required this.config,
+    required this.jogadorLabel,
+    required this.saving,
+    required this.onTapJogador,
+  });
+
+  final List<Jogador> jogadores;
+  final AppConfig config;
+  final String Function(Jogador jogador) jogadorLabel;
+  final bool saving;
+  final Future<void> Function(Jogador jogador) onTapJogador;
+
+  bool _isGoleiro(Jogador jogador) {
+    final raw = (jogador.posicao ?? '').trim().toLowerCase();
+    return raw.contains('goleiro') || raw == 'gk' || raw == 'gol';
+  }
+
+  List<int> _formationByCount(int count, {required bool hasGoalkeeper}) {
+    final c = count.clamp(0, hasGoalkeeper ? 10 : 11);
+    const withGk = <int, List<int>>{
+      0: <int>[],
+      1: <int>[1],
+      2: <int>[2],
+      3: <int>[2, 1],
+      4: <int>[2, 2],
+      5: <int>[2, 2, 1],
+      6: <int>[2, 2, 2],
+      7: <int>[3, 2, 2],
+      8: <int>[3, 3, 2],
+      9: <int>[3, 3, 3],
+      10: <int>[3, 4, 3],
+    };
+    const withoutGk = <int, List<int>>{
+      0: <int>[],
+      1: <int>[1],
+      2: <int>[2],
+      3: <int>[2, 1],
+      4: <int>[2, 2],
+      5: <int>[2, 2, 1],
+      6: <int>[2, 2, 2],
+      7: <int>[3, 2, 2],
+      8: <int>[3, 3, 2],
+      9: <int>[3, 3, 3],
+      10: <int>[3, 4, 3],
+      11: <int>[3, 4, 4],
+    };
+    return List<int>.from((hasGoalkeeper ? withGk : withoutGk)[c] ?? <int>[]);
+  }
+
+  List<double> _lineYPositions(int lineCount, {required bool hasGoalkeeper}) {
+    if (lineCount <= 0) return const <double>[];
+
+    final top = -0.72;
+    final bottom = hasGoalkeeper ? 0.14 : 0.52;
+    if (lineCount == 1) {
+      return <double>[(top + bottom) / 2];
+    }
+
+    final step = (bottom - top) / (lineCount - 1);
+    return List<double>.generate(lineCount, (index) => top + step * index);
+  }
+
+  double _resolveCardWidth(double fieldWidth, int maxInLine) {
+    if (maxInLine <= 1) return 88;
+    const horizontalGap = 8.0;
+    const horizontalPadding = 10.0;
+    const minWidth = 64.0;
+    const maxWidth = 88.0;
+
+    final available =
+        fieldWidth -
+        (horizontalPadding * 2) -
+        ((maxInLine - 1) * horizontalGap);
+    final fitted = available / maxInLine;
+    return fitted.clamp(minWidth, maxWidth);
+  }
+
+  List<double> _lineXPositions(
+    int count, {
+    required double fieldWidth,
+    required double cardWidth,
+  }) {
+    if (count <= 0) return const <double>[];
+    if (count == 1) return const <double>[0];
+
+    const sidePadding = 10.0;
+    final minCenterX = sidePadding + (cardWidth / 2);
+    final maxCenterX = fieldWidth - sidePadding - (cardWidth / 2);
+    if (maxCenterX <= minCenterX) {
+      return List<double>.filled(count, 0);
+    }
+
+    final step = (maxCenterX - minCenterX) / (count - 1);
+    return List<double>.generate(count, (index) {
+      final centerX = minCenterX + (step * index);
+      return ((centerX / fieldWidth) * 2) - 1;
+    });
+  }
+
+  List<Jogador> _seededShuffle(List<Jogador> players, int seedBase) {
+    final shuffled = List<Jogador>.from(players);
+    final random = math.Random(seedBase);
+    for (var i = shuffled.length - 1; i > 0; i--) {
+      final j = random.nextInt(i + 1);
+      final temp = shuffled[i];
+      shuffled[i] = shuffled[j];
+      shuffled[j] = temp;
+    }
+    return shuffled;
+  }
+
+  _FieldLayout _buildLayout(
+    List<Jogador> source, {
+    required double fieldWidth,
+  }) {
+    if (source.isEmpty) {
+      return const _FieldLayout(spots: <_FieldSpot>[], cardWidth: 80);
+    }
+
+    Jogador? goleiro;
+    for (final item in source) {
+      if (_isGoleiro(item)) {
+        goleiro = item;
+        break;
+      }
+    }
+    final seedBase = source.fold<int>(
+      17,
+      (hash, item) => ((hash * 31) ^ item.id) & 0x7fffffff,
+    );
+
+    final semGoleiro = source
+        .where((jogador) => goleiro == null || jogador.id != goleiro.id)
+        .toList();
+
+    final displayed = <Jogador>[];
+    if (goleiro != null) {
+      displayed.add(goleiro);
+    }
+    displayed.addAll(semGoleiro.take(goleiro != null ? 10 : 11));
+
+    final outfield = displayed
+        .where((jogador) => goleiro == null || jogador.id != goleiro.id)
+        .toList();
+    final outfieldShuffled = _seededShuffle(outfield, seedBase ^ 0x6D2B79F5);
+    final hasGk = goleiro != null;
+    final formation = _formationByCount(
+      outfieldShuffled.length,
+      hasGoalkeeper: hasGk,
+    );
+    final maxPlayersInLine = formation.isEmpty
+        ? 1
+        : formation.reduce((a, b) => a > b ? a : b);
+    final cardWidth = _resolveCardWidth(fieldWidth, maxPlayersInLine);
+    final yPositions = _lineYPositions(formation.length, hasGoalkeeper: hasGk);
+
+    final spots = <_FieldSpot>[];
+    var cursor = 0;
+    for (var line = 0; line < formation.length; line++) {
+      final countInLine = formation[line];
+      final xPositions = _lineXPositions(
+        countInLine,
+        fieldWidth: fieldWidth,
+        cardWidth: cardWidth,
+      );
+      for (
+        var i = 0;
+        i < countInLine && cursor < outfieldShuffled.length;
+        i++
+      ) {
+        spots.add(
+          _FieldSpot(
+            jogador: outfieldShuffled[cursor],
+            alignment: Offset(xPositions[i], yPositions[line]),
+          ),
+        );
+        cursor++;
+      }
+    }
+
+    if (goleiro != null) {
+      spots.add(_FieldSpot(jogador: goleiro, alignment: const Offset(0, 0.78)));
+    }
+
+    return _FieldLayout(spots: spots, cardWidth: cardWidth);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fieldHeight = MediaQuery.sizeOf(context).height * 0.6;
+
+    return CyberCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Campo organizado automaticamente por quantidade de jogadores.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: fieldHeight.clamp(360.0, 620.0),
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE6F3EA),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final layout = _buildLayout(
+                  jogadores,
+                  fieldWidth: constraints.maxWidth,
+                );
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(painter: _FieldPainter()),
+                    ),
+                    ...layout.spots.map((spot) {
+                      return Align(
+                        alignment: Alignment(
+                          spot.alignment.dx,
+                          spot.alignment.dy,
+                        ),
+                        child: _FormationPlayerCard(
+                          jogador: spot.jogador,
+                          config: config,
+                          jogadorLabel: jogadorLabel,
+                          saving: saving,
+                          width: layout.cardWidth,
+                          onTap: () => onTapJogador(spot.jogador),
+                        ),
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FormationPlayerCard extends StatelessWidget {
+  const _FormationPlayerCard({
+    required this.jogador,
+    required this.config,
+    required this.jogadorLabel,
+    required this.saving,
+    required this.width,
+    required this.onTap,
+  });
+
+  final Jogador jogador;
+  final AppConfig config;
+  final String Function(Jogador jogador) jogadorLabel;
+  final bool saving;
+  final double width;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fotoUrl = config.resolveApiImageUrl(jogador.fotoUrl);
+    final avatarRadius = width < 72 ? 17.0 : 20.0;
+    final nameFontSize = width < 72 ? 10.5 : 11.5;
+    final hasPosicao = (jogador.posicao ?? '').trim().isNotEmpty;
+
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: saving ? null : onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          width: 2,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: avatarRadius,
+                        backgroundColor: const Color(0xFFEAF0EC),
+                        backgroundImage: fotoUrl != null
+                            ? NetworkImage(fotoUrl)
+                            : null,
+                        child: fotoUrl == null
+                            ? Text(
+                                _initialFromLabel(jogadorLabel(jogador)),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                    if (jogador.capitao == true)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 15,
+                          height: 15,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFD97706),
+                          ),
+                          child: const Icon(
+                            Icons.star_rounded,
+                            size: 10,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        jogadorLabel(jogador),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: nameFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                          height: 1.05,
+                        ),
+                      ),
+                      if (hasPosicao) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          jogador.posicao!.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: nameFontSize - 1,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black.withValues(alpha: 0.7),
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _initialFromLabel(String label) {
+    final value = label.trim();
+    if (value.isEmpty) return 'J';
+    return value.substring(0, 1).toUpperCase();
+  }
+}
+
+class _FieldLayout {
+  const _FieldLayout({required this.spots, required this.cardWidth});
+
+  final List<_FieldSpot> spots;
+  final double cardWidth;
+}
+
+class _FieldSpot {
+  const _FieldSpot({required this.jogador, required this.alignment});
+
+  final Jogador jogador;
+  final Offset alignment;
+}
+
+class _FieldPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = const Color(0x6F7BC79A)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
+
+    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), linePaint);
+    canvas.drawCircle(Offset(centerX, centerY), 18, linePaint);
+
+    final borderPaint = Paint()
+      ..color = const Color(0x4D68B186)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final rect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(12),
+    );
+    canvas.drawRRect(rect, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

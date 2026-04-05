@@ -16,9 +16,12 @@ class TemporadaCreateInput {
 
 class TemporadasRemoteDataSource {
   TemporadasRemoteDataSource({required ApiClient apiClient})
-    : _dio = apiClient.dio;
+    : _apiClient = apiClient,
+      _dio = apiClient.dio;
 
+  final ApiClient _apiClient;
   final Dio _dio;
+  bool get _isSeguidor => _apiClient.isSeguidor;
 
   Future<PaginatedResult<Temporada>> listTemporadas({
     required int peladaId,
@@ -26,8 +29,11 @@ class TemporadasRemoteDataSource {
     required int perPage,
   }) async {
     try {
+      final path = _isSeguidor
+          ? '/api/seguidores/peladas/$peladaId/temporadas'
+          : '/api/peladas/$peladaId/temporadas';
       final response = await _dio.get<dynamic>(
-        '/api/peladas/$peladaId/temporadas',
+        path,
         queryParameters: <String, dynamic>{'page': page, 'per_page': perPage},
       );
 
@@ -42,8 +48,28 @@ class TemporadasRemoteDataSource {
     }
   }
 
-  Future<Temporada> getTemporada(int temporadaId) async {
+  Future<Temporada> getTemporada(int temporadaId, {int? peladaId}) async {
     try {
+      if (_isSeguidor) {
+        if (peladaId == null || peladaId <= 0) {
+          throw ApiException(
+            message: 'Pelada obrigatoria para buscar temporada de seguidor',
+          );
+        }
+        final temporadas = await listTemporadas(
+          peladaId: peladaId,
+          page: 1,
+          perPage: 200,
+        );
+        final temporada = temporadas.items.where(
+          (item) => item.id == temporadaId,
+        );
+        if (temporada.isNotEmpty) {
+          return temporada.first;
+        }
+        throw ApiException(message: 'Temporada nao encontrada para a pelada');
+      }
+
       final response = await _dio.get<dynamic>(
         '/api/peladas/temporadas/$temporadaId',
       );

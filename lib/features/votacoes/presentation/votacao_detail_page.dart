@@ -230,7 +230,23 @@ class _VotacaoDetailPageState extends State<VotacaoDetailPage> {
     return int.tryParse(value?.toString() ?? '');
   }
 
+  dynamic _decodeJsonIfNeeded(dynamic value) {
+    if (value is! String) return value;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return value;
+    final looksLikeJson =
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'));
+    if (!looksLikeJson) return value;
+    try {
+      return jsonDecode(trimmed);
+    } catch (_) {
+      return value;
+    }
+  }
+
   Map<String, dynamic> _asMap(dynamic value) {
+    value = _decodeJsonIfNeeded(value);
     if (value is Map<String, dynamic>) return value;
     if (value is Map) {
       return value.map((key, item) => MapEntry(key.toString(), item));
@@ -239,6 +255,7 @@ class _VotacaoDetailPageState extends State<VotacaoDetailPage> {
   }
 
   List<Map<String, dynamic>> _asMapList(dynamic value) {
+    value = _decodeJsonIfNeeded(value);
     if (value is! Iterable) return const <Map<String, dynamic>>[];
     return value
         .map(_asMap)
@@ -380,6 +397,8 @@ class _VotacaoDetailPageState extends State<VotacaoDetailPage> {
         : resultadoRaiz;
     final vencedor = _asMap(resultado['vencedor']);
     final ranking = _asMapList(resultado['resultado']);
+    final totalVotos =
+        _asInt(resultado['total_votos'] ?? resultadoRaiz['total_votos']) ?? 0;
 
     final vencedorNome =
         (vencedor['apelido']?.toString().trim() ?? '').isNotEmpty
@@ -816,6 +835,38 @@ class _VotacaoDetailPageState extends State<VotacaoDetailPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                CyberCard(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceAlt,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Icon(
+                          Icons.how_to_vote_rounded,
+                          size: 16,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$totalVotos voto(s) registrado(s)',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 if (vencedorNome.isNotEmpty)
                   CyberCard(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -903,14 +954,43 @@ class _VotacaoDetailPageState extends State<VotacaoDetailPage> {
                   )
                 else
                   CyberCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SelectableText(
-                        const JsonEncoder.withIndent(
-                          '  ',
-                        ).convert(_resultado ?? const <String, dynamic>{}),
-                        style: const TextStyle(fontFamily: 'monospace'),
-                      ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceAlt,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Icon(
+                            Icons.info_outline_rounded,
+                            size: 17,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Ainda não há votos computados nesta votação.',
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_resultado != null &&
+                    ranking.isEmpty &&
+                    vencedorNome.isEmpty)
+                  CyberCard(
+                    margin: const EdgeInsets.only(top: 8),
+                    child: const Text(
+                      'Os resultados aparecerão aqui assim que houver votos.',
+                      style: TextStyle(color: AppTheme.textSoft, fontSize: 12),
                     ),
                   ),
               ],

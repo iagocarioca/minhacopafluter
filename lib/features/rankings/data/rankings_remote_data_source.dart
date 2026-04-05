@@ -8,15 +8,22 @@ import '../../../domain/models/ranking.dart';
 
 class RankingsRemoteDataSource {
   RankingsRemoteDataSource({required ApiClient apiClient})
-    : _dio = apiClient.dio;
+    : _apiClient = apiClient,
+      _dio = apiClient.dio;
 
+  final ApiClient _apiClient;
   final Dio _dio;
+  bool get _isSeguidor => _apiClient.isSeguidor;
 
-  Future<List<RankingTimeEntry>> getRankingTimes(int temporadaId) async {
+  Future<List<RankingTimeEntry>> getRankingTimes(
+    int temporadaId, {
+    bool forcePublic = false,
+  }) async {
     try {
-      final response = await _dio.get<dynamic>(
-        '/api/peladas/temporadas/$temporadaId/ranking/times',
-      );
+      final path = !forcePublic && _isSeguidor
+          ? '/api/seguidores/temporadas/$temporadaId/ranking/times'
+          : '/api/peladas/temporadas/$temporadaId/ranking/times';
+      final response = await _dio.get<dynamic>(path);
       final payload = asPayload(response.data);
       final raw = payload['ranking'] ?? payload['data'] ?? payload;
       if (raw is! Iterable) return const <RankingTimeEntry>[];
@@ -63,12 +70,14 @@ class RankingsRemoteDataSource {
   }
 
   Future<List<RankingJogadorEntry>> getRankingArtilheiros(
-    int temporadaId,
-  ) async {
+    int temporadaId, {
+    bool forcePublic = false,
+  }) async {
     try {
-      final response = await _dio.get<dynamic>(
-        '/api/peladas/temporadas/$temporadaId/ranking/artilheiros',
-      );
+      final path = !forcePublic && _isSeguidor
+          ? '/api/seguidores/temporadas/$temporadaId/ranking/artilheiros'
+          : '/api/peladas/temporadas/$temporadaId/ranking/artilheiros';
+      final response = await _dio.get<dynamic>(path);
       final payload = asPayload(response.data);
       final raw = payload['ranking'] ?? payload['data'] ?? payload;
       if (raw is! Iterable) return const <RankingJogadorEntry>[];
@@ -80,12 +89,14 @@ class RankingsRemoteDataSource {
   }
 
   Future<List<RankingJogadorEntry>> getRankingAssistencias(
-    int temporadaId,
-  ) async {
+    int temporadaId, {
+    bool forcePublic = false,
+  }) async {
     try {
-      final response = await _dio.get<dynamic>(
-        '/api/peladas/temporadas/$temporadaId/ranking/assistencias',
-      );
+      final path = !forcePublic && _isSeguidor
+          ? '/api/seguidores/temporadas/$temporadaId/ranking/assistencias'
+          : '/api/peladas/temporadas/$temporadaId/ranking/assistencias';
+      final response = await _dio.get<dynamic>(path);
       final payload = asPayload(response.data);
       final raw = payload['ranking'] ?? payload['data'] ?? payload;
       if (raw is! Iterable) return const <RankingJogadorEntry>[];
@@ -102,6 +113,34 @@ class RankingsRemoteDataSource {
         '/api/peladas/temporadas/$temporadaId/scout',
       );
       return asPayload(response.data);
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  Future<List<RankingJogadorEntry>> getRankingJogadoresSeguidor({
+    required int peladaId,
+    required int ano,
+    int? temporadaId,
+    int? rodadaId,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/seguidores/peladas/$peladaId/ranking/jogadores',
+        queryParameters: <String, dynamic>{
+          'ano': ano,
+          ...?temporadaId == null
+              ? null
+              : <String, dynamic>{'temporada_id': temporadaId},
+          ...?rodadaId == null
+              ? null
+              : <String, dynamic>{'rodada_id': rodadaId},
+        },
+      );
+      final payload = asPayload(response.data);
+      final raw = payload['ranking'] ?? payload['data'] ?? payload;
+      if (raw is! Iterable) return const <RankingJogadorEntry>[];
+      return raw.map((item) => RankingJogadorEntry.fromApi(item)).toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }

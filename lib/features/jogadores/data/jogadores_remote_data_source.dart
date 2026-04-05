@@ -29,9 +29,12 @@ class JogadorUpsertInput {
 
 class JogadoresRemoteDataSource {
   JogadoresRemoteDataSource({required ApiClient apiClient})
-    : _dio = apiClient.dio;
+    : _apiClient = apiClient,
+      _dio = apiClient.dio;
 
+  final ApiClient _apiClient;
   final Dio _dio;
+  bool get _isSeguidor => _apiClient.isSeguidor;
 
   Future<PaginatedResult<Jogador>> listJogadores({
     required int peladaId,
@@ -40,8 +43,11 @@ class JogadoresRemoteDataSource {
     bool? ativo,
   }) async {
     try {
+      final path = _isSeguidor
+          ? '/api/seguidores/peladas/$peladaId/jogadores'
+          : '/api/peladas/$peladaId/jogadores';
       final response = await _dio.get<dynamic>(
-        '/api/peladas/$peladaId/jogadores',
+        path,
         queryParameters: <String, dynamic>{
           'page': page,
           'per_page': perPage,

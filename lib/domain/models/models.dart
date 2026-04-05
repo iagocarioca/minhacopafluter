@@ -9,6 +9,7 @@ export 'pelada_publica.dart';
 export 'perfil_publico.dart';
 export 'ranking.dart';
 export 'rodada.dart';
+export 'seguidor_feed.dart';
 export 'site_assets.dart';
 export 'substituicao.dart';
 export 'temporada.dart';

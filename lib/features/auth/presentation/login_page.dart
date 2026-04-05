@@ -94,6 +94,8 @@ class _LoginPageState extends State<LoginPage> {
           brandLabel: 'MINHACOPA',
           showBack: false,
           logoOnlyHeader: true,
+          centerContent: true,
+          contentMaxWidth: 370,
           logoImageUrl: widget.config.resolveApiImageUrl(_siteAssets?.logoUrl),
           headerBackgroundImageUrl: widget.config.resolveApiImageUrl(
             _siteAssets?.bannerUrl,

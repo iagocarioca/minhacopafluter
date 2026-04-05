@@ -51,6 +51,7 @@ class AuthRemoteDataSource {
     required String username,
     required String email,
     required String password,
+    String? tipoUsuario,
   }) async {
     try {
       await _dio.post<dynamic>(
@@ -59,6 +60,8 @@ class AuthRemoteDataSource {
           'username': username,
           'email': email,
           'password': password,
+          if (tipoUsuario != null && tipoUsuario.trim().isNotEmpty)
+            'tipo_usuario': tipoUsuario.trim(),
         },
       );
     } on DioException catch (error) {

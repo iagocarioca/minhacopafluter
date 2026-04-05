@@ -19,7 +19,6 @@ import '../features/rodadas/presentation/rodada_detail_page.dart';
 import '../features/rodadas/presentation/rodadas_page.dart';
 import '../features/shell/presentation/web_app_shell_page.dart';
 import '../features/splash/presentation/splash_page.dart';
-import '../features/temporadas/presentation/temporada_dashboard_page.dart';
 import '../features/temporadas/presentation/temporadas_page.dart';
 import '../features/times/presentation/sorteio_page.dart';
 import '../features/times/presentation/time_detail_page.dart';
@@ -83,7 +82,9 @@ GoRouter buildAppRouter({required AppServices services}) {
         builder: (context, state) => PeladasPage(
           authController: authController,
           dataSource: services.peladasDataSource,
+          seguidoresDataSource: services.seguidoresDataSource,
           config: config,
+          initialSearch: _safeQueryParam(state.uri, 'q'),
         ),
       ),
       GoRoute(
@@ -111,6 +112,8 @@ GoRouter buildAppRouter({required AppServices services}) {
           return PeladaDetailPage(
             peladaId: peladaId,
             dataSource: services.peladasDataSource,
+            seguidoresDataSource: services.seguidoresDataSource,
+            authController: authController,
             config: config,
           );
         },
@@ -122,6 +125,8 @@ GoRouter buildAppRouter({required AppServices services}) {
           return PeladaPublicaPage(
             peladaId: peladaId,
             config: config,
+            authController: authController,
+            seguidoresDataSource: services.seguidoresDataSource,
             peladasDataSource: services.peladasDataSource,
             rankingsDataSource: services.rankingsDataSource,
           );
@@ -197,16 +202,10 @@ GoRouter buildAppRouter({required AppServices services}) {
       ),
       GoRoute(
         path: '/peladas/:peladaId/temporadas/:temporadaId',
-        builder: (context, state) {
+        redirect: (context, state) {
           final peladaId = _requiredInt(state.pathParameters['peladaId']);
           final temporadaId = _requiredInt(state.pathParameters['temporadaId']);
-          return TemporadaDashboardPage(
-            peladaId: peladaId,
-            temporadaId: temporadaId,
-            temporadasDataSource: services.temporadasDataSource,
-            rodadasDataSource: services.rodadasDataSource,
-            timesDataSource: services.timesDataSource,
-          );
+          return '/peladas/$peladaId/temporadas/$temporadaId/rodadas';
         },
       ),
       GoRoute(
@@ -408,4 +407,27 @@ int _requiredInt(String? rawValue) {
     throw Exception('Parametro de rota invalido');
   }
   return value;
+}
+
+String _safeQueryParam(Uri uri, String key) {
+  try {
+    return (uri.queryParameters[key] ?? '').trim();
+  } catch (_) {
+    final raw = uri.query.trim();
+    if (raw.isEmpty) return '';
+    for (final entry in raw.split('&')) {
+      if (entry.isEmpty) continue;
+      final idx = entry.indexOf('=');
+      final currentKey = idx >= 0 ? entry.substring(0, idx) : entry;
+      if (currentKey != key) continue;
+      final value = idx >= 0 ? entry.substring(idx + 1) : '';
+      final normalized = value.replaceAll('+', ' ');
+      try {
+        return Uri.decodeQueryComponent(normalized).trim();
+      } catch (_) {
+        return normalized.trim();
+      }
+    }
+    return '';
+  }
 }

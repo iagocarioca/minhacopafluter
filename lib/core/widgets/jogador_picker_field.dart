@@ -60,7 +60,7 @@ Future<int?> showJogadorPickerModal({
                 decoration: BoxDecoration(
                   color: AppTheme.surface,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
+                    top: Radius.circular(22),
                   ),
                   border: Border.all(color: AppTheme.surfaceBorderSoft),
                 ),
@@ -77,7 +77,7 @@ Future<int?> showJogadorPickerModal({
                     ),
                     const SizedBox(height: 12),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
                           Expanded(
@@ -101,7 +101,7 @@ Future<int?> showJogadorPickerModal({
                     ),
                     const SizedBox(height: 10),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         onChanged: (value) =>
                             setModalState(() => query = value),
@@ -114,7 +114,7 @@ Future<int?> showJogadorPickerModal({
                     const SizedBox(height: 10),
                     if (allowNone)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: _JogadorOptionTile(
                           label: noneLabel,
                           subtitle: noneSubtitle,
@@ -134,7 +134,7 @@ Future<int?> showJogadorPickerModal({
                             )
                           : ListView.builder(
                               controller: scrollController,
-                              padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                               itemCount: filtered.length,
                               itemBuilder: (context, index) {
                                 final jogador = filtered[index];
@@ -198,20 +198,20 @@ class _JogadorPickerFieldState extends State<JogadorPickerField> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               onTap: widget.enabled ? () => widget.onTap() : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
+                  horizontal: 14,
+                  vertical: 11,
                 ),
                 decoration: BoxDecoration(
                   color: widget.enabled
                       ? (active ? const Color(0xFFEAF2F8) : AppTheme.surfaceAlt)
                       : const Color(0xFFE9EDF2),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: widget.enabled
                         ? (active
@@ -286,7 +286,7 @@ class _JogadorOptionTileState extends State<_JogadorOptionTile> {
     final highlighted = widget.selected || _hovered;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
@@ -298,7 +298,7 @@ class _JogadorOptionTileState extends State<_JogadorOptionTile> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 160),
               curve: Curves.easeOut,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
                 color: widget.selected
                     ? AppTheme.primary.withValues(alpha: 0.14)

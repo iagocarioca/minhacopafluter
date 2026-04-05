@@ -16,6 +16,7 @@ import 'features/perfis/data/perfis_remote_data_source.dart';
 import 'features/publico/data/site_assets_remote_data_source.dart';
 import 'features/rankings/data/rankings_remote_data_source.dart';
 import 'features/rodadas/data/rodadas_remote_data_source.dart';
+import 'features/seguidores/data/seguidores_remote_data_source.dart';
 import 'features/substituicoes/data/substituicoes_remote_data_source.dart';
 import 'features/temporadas/data/temporadas_remote_data_source.dart';
 import 'features/times/data/times_remote_data_source.dart';
@@ -45,6 +46,7 @@ Future<void> main() async {
     jogadoresDataSource: JogadoresRemoteDataSource(apiClient: apiClient),
     temporadasDataSource: TemporadasRemoteDataSource(apiClient: apiClient),
     rodadasDataSource: RodadasRemoteDataSource(apiClient: apiClient),
+    seguidoresDataSource: SeguidoresRemoteDataSource(apiClient: apiClient),
     partidasDataSource: PartidasRemoteDataSource(apiClient: apiClient),
     votacoesDataSource: VotacoesRemoteDataSource(apiClient: apiClient),
     substituicoesDataSource: SubstituicoesRemoteDataSource(

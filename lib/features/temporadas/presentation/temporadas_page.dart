@@ -374,7 +374,7 @@ class _TemporadasPageState extends State<TemporadasPage> {
                   vertical: 14,
                 ),
                 onTap: () => context.push(
-                  '/peladas/${widget.peladaId}/temporadas/${item.id}',
+                  '/peladas/${widget.peladaId}/temporadas/${item.id}/rodadas',
                 ),
                 onLongPress: () => _showTemporadaActions(item),
                 child: Row(

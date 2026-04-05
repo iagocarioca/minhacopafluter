@@ -33,6 +33,9 @@ class AuthController extends ChangeNotifier {
   String? get refreshToken => _tokens?.refreshToken;
   bool get hasRefreshToken => _tokens?.hasRefreshToken == true;
   User? get currentUser => _currentUser;
+  String? get tipoUsuario => _currentUser?.tipoUsuario;
+  bool get isOrganizador => _currentUser?.isOrganizador == true;
+  bool get isSeguidor => _currentUser?.isSeguidor == true;
   String? get errorMessage => _errorMessage;
 
   Future<void> initialize() async {
@@ -88,6 +91,7 @@ class AuthController extends ChangeNotifier {
     required String username,
     required String email,
     required String password,
+    String tipoUsuario = 'organizador',
   }) async {
     _setLoading(true);
     _errorMessage = null;
@@ -97,6 +101,7 @@ class AuthController extends ChangeNotifier {
         username: username,
         email: email,
         password: password,
+        tipoUsuario: tipoUsuario,
       );
       return true;
     } catch (error) {

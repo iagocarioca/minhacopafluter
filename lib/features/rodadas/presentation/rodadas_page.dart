@@ -71,7 +71,10 @@ class _RodadasPageState extends State<RodadasPage> {
           page: 1,
           perPage: 100,
         ),
-        widget.temporadasDataSource.getTemporada(widget.temporadaId),
+        widget.temporadasDataSource.getTemporada(
+          widget.temporadaId,
+          peladaId: widget.peladaId,
+        ),
         widget.temporadasDataSource.listTemporadas(
           peladaId: widget.peladaId,
           page: 1,

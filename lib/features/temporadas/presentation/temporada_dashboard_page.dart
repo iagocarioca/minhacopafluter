@@ -57,6 +57,7 @@ class _TemporadaDashboardPageState extends State<TemporadaDashboardPage> {
     try {
       final temporada = await widget.temporadasDataSource.getTemporada(
         widget.temporadaId,
+        peladaId: widget.peladaId,
       );
       final results = await Future.wait([
         widget.rodadasDataSource.listRodadas(
@@ -146,7 +147,7 @@ class _TemporadaDashboardPageState extends State<TemporadaDashboardPage> {
         ? 'Indefinido'
         : normalized[0].toUpperCase() + normalized.substring(1);
     final color = isActive ? const Color(0xFFFF3B4D) : const Color(0xFFF5C451);
-    final background = color.withOpacity(0.12);
+    final background = color.withValues(alpha: 0.12);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

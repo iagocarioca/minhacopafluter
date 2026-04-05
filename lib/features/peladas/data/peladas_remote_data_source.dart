@@ -39,9 +39,12 @@ class PeladaUpsertInput {
 
 class PeladasRemoteDataSource {
   PeladasRemoteDataSource({required ApiClient apiClient})
-    : _dio = apiClient.dio;
+    : _apiClient = apiClient,
+      _dio = apiClient.dio;
 
+  final ApiClient _apiClient;
   final Dio _dio;
+  bool get _isSeguidor => _apiClient.isSeguidor;
 
   Future<PaginatedResult<Pelada>> listPeladas({
     required int page,
@@ -49,19 +52,22 @@ class PeladasRemoteDataSource {
     int? usuarioId,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
-        '/api/peladas/',
-        queryParameters: <String, dynamic>{
-          'page': page,
-          'per_page': perPage,
-          ...?usuarioId == null
-              ? null
-              : <String, dynamic>{'usuario_id': usuarioId},
-        },
-      );
+      final path = _isSeguidor ? '/api/seguidores/peladas' : '/api/peladas/';
+      final query = <String, dynamic>{'page': page, 'per_page': perPage};
+      if (!_isSeguidor && usuarioId != null) {
+        query['usuario_id'] = usuarioId;
+      }
+      final response = await _dio.get<dynamic>(path, queryParameters: query);
 
       final payload = asPayload(response.data);
-      final items = parseDataList(payload).map(Pelada.fromJson).toList();
+      final items = parseDataList(payload)
+          .map(
+            (item) =>
+                item.containsKey('pelada') ? parseMap(item['pelada']) : item,
+          )
+          .where((item) => item.isNotEmpty)
+          .map(Pelada.fromJson)
+          .toList();
       return PaginatedResult<Pelada>(
         items: items,
         meta: parsePaginationMeta(payload),
@@ -73,7 +79,10 @@ class PeladasRemoteDataSource {
 
   Future<Pelada> getPelada(int id) async {
     try {
-      final response = await _dio.get<dynamic>('/api/peladas/$id');
+      final path = _isSeguidor
+          ? '/api/seguidores/peladas/$id/perfil'
+          : '/api/peladas/$id';
+      final response = await _dio.get<dynamic>(path);
       final payload = asPayload(response.data);
       final data = payload.containsKey('pelada')
           ? parseMap(payload['pelada'])

@@ -18,6 +18,8 @@ class AuthPremiumLayout extends StatelessWidget {
     this.logoImageUrl,
     this.headerBackgroundImageUrl,
     this.logoOnlyHeader = false,
+    this.centerContent = false,
+    this.contentMaxWidth = 360,
   });
 
   final String headlineTop;
@@ -32,6 +34,8 @@ class AuthPremiumLayout extends StatelessWidget {
   final String? logoImageUrl;
   final String? headerBackgroundImageUrl;
   final bool logoOnlyHeader;
+  final bool centerContent;
+  final double contentMaxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +161,7 @@ class AuthPremiumLayout extends StatelessWidget {
                             right: 0,
                             bottom: -1,
                             child: SizedBox(
-                              height: 38,
+                              height: 44,
                               child: ClipPath(
                                 clipper: _AuthHeaderBottomClipper(),
                                 child: Container(color: pageBackground),
@@ -170,9 +174,29 @@ class AuthPremiumLayout extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-                    child: child,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final minHeight = constraints.maxHeight > 32
+                          ? constraints.maxHeight - 32
+                          : 0.0;
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: minHeight),
+                          child: Align(
+                            alignment: centerContent
+                                ? Alignment.center
+                                : Alignment.topCenter,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: contentMaxWidth,
+                              ),
+                              child: child,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -436,25 +460,27 @@ class _HeaderCenterLogo extends StatelessWidget {
 class _AuthHeaderBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    final path = Path()..moveTo(0, 0);
-
-    path.cubicTo(
-      size.width * 0.18,
-      size.height * 0.95,
-      size.width * 0.36,
-      size.height * 0.35,
-      size.width * 0.50,
-      size.height * 0.78,
+    final path = Path()..moveTo(0, size.height * 0.82);
+    path.quadraticBezierTo(
+      size.width * 0.15,
+      size.height * 1.0,
+      size.width * 0.31,
+      size.height * 0.56,
     );
     path.cubicTo(
-      size.width * 0.66,
-      size.height * 1.02,
-      size.width * 0.82,
-      size.height * 0.40,
+      size.width * 0.43,
+      size.height * 0.2,
+      size.width * 0.57,
+      size.height * 1.04,
+      size.width * 0.69,
+      size.height * 0.58,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.85,
+      size.height * 0.24,
       size.width,
-      size.height * 0.98,
+      size.height * 0.84,
     );
-
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     path.close();

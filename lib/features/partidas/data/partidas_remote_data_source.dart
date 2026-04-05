@@ -35,15 +35,19 @@ class GolCreateInput {
 
 class PartidasRemoteDataSource {
   PartidasRemoteDataSource({required ApiClient apiClient})
-    : _dio = apiClient.dio;
+    : _apiClient = apiClient,
+      _dio = apiClient.dio;
 
+  final ApiClient _apiClient;
   final Dio _dio;
+  bool get _isSeguidor => _apiClient.isSeguidor;
 
   Future<List<Partida>> listPartidas(int rodadaId) async {
     try {
-      final response = await _dio.get<dynamic>(
-        '/api/peladas/rodadas/$rodadaId/partidas',
-      );
+      final path = _isSeguidor
+          ? '/api/seguidores/rodadas/$rodadaId/partidas'
+          : '/api/peladas/rodadas/$rodadaId/partidas';
+      final response = await _dio.get<dynamic>(path);
       final payload = asPayload(response.data);
       final raw = payload['partidas'] ?? payload['data'] ?? payload;
       if (raw is! Iterable) return const <Partida>[];

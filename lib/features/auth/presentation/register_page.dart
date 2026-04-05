@@ -24,12 +24,16 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  static const String _tipoOrganizador = 'organizador';
+  static const String _tipoSeguidor = 'seguidor';
+
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _agreeTerms = false;
+  String _tipoUsuario = _tipoOrganizador;
   SiteAssets? _siteAssets;
 
   @override
@@ -67,6 +71,7 @@ class _RegisterPageState extends State<RegisterPage> {
       username: _usernameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
+      tipoUsuario: _tipoUsuario,
     );
 
     if (!mounted) return;
@@ -200,6 +205,85 @@ class _RegisterPageState extends State<RegisterPage> {
                 const Text(
                   'Senha com no minimo 8 caracteres, incluindo 1 maiuscula e 1 simbolo.',
                   style: TextStyle(
+                    fontSize: 11.5,
+                    color: Color(0xFF676E7A),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Tipo de conta',
+                  style: TextStyle(
+                    color: Color(0xFF2E3541),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Organizador'),
+                        selected: _tipoUsuario == _tipoOrganizador,
+                        onSelected: loading
+                            ? null
+                            : (_) => setState(
+                                () => _tipoUsuario = _tipoOrganizador,
+                              ),
+                        selectedColor: const Color(0x2617A76F),
+                        backgroundColor: const Color(0xFFF3F4F7),
+                        labelStyle: TextStyle(
+                          color: _tipoUsuario == _tipoOrganizador
+                              ? const Color(0xFF116066)
+                              : const Color(0xFF4B5361),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        side: BorderSide(
+                          color: _tipoUsuario == _tipoOrganizador
+                              ? const Color(0xFF17A76F)
+                              : const Color(0xFFD6D9E0),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Seguidor'),
+                        selected: _tipoUsuario == _tipoSeguidor,
+                        onSelected: loading
+                            ? null
+                            : (_) =>
+                                  setState(() => _tipoUsuario = _tipoSeguidor),
+                        selectedColor: const Color(0x2617A76F),
+                        backgroundColor: const Color(0xFFF3F4F7),
+                        labelStyle: TextStyle(
+                          color: _tipoUsuario == _tipoSeguidor
+                              ? const Color(0xFF116066)
+                              : const Color(0xFF4B5361),
+                          fontWeight: FontWeight.w700,
+                        ),
+                        side: BorderSide(
+                          color: _tipoUsuario == _tipoSeguidor
+                              ? const Color(0xFF17A76F)
+                              : const Color(0xFFD6D9E0),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _tipoUsuario == _tipoSeguidor
+                      ? 'Seguidor acompanha peladas sem permissoes de edicao.'
+                      : 'Organizador cria e gerencia sua propria pelada.',
+                  style: const TextStyle(
                     fontSize: 11.5,
                     color: Color(0xFF676E7A),
                     fontWeight: FontWeight.w600,

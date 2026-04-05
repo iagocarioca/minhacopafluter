@@ -10,6 +10,7 @@ import '../features/perfis/data/perfis_remote_data_source.dart';
 import '../features/publico/data/site_assets_remote_data_source.dart';
 import '../features/rankings/data/rankings_remote_data_source.dart';
 import '../features/rodadas/data/rodadas_remote_data_source.dart';
+import '../features/seguidores/data/seguidores_remote_data_source.dart';
 import '../features/substituicoes/data/substituicoes_remote_data_source.dart';
 import '../features/temporadas/data/temporadas_remote_data_source.dart';
 import '../features/times/data/times_remote_data_source.dart';
@@ -25,6 +26,7 @@ class AppServices {
     required this.jogadoresDataSource,
     required this.temporadasDataSource,
     required this.rodadasDataSource,
+    required this.seguidoresDataSource,
     required this.partidasDataSource,
     required this.votacoesDataSource,
     required this.substituicoesDataSource,
@@ -44,6 +46,7 @@ class AppServices {
   final JogadoresRemoteDataSource jogadoresDataSource;
   final TemporadasRemoteDataSource temporadasDataSource;
   final RodadasRemoteDataSource rodadasDataSource;
+  final SeguidoresRemoteDataSource seguidoresDataSource;
   final PartidasRemoteDataSource partidasDataSource;
   final VotacoesRemoteDataSource votacoesDataSource;
   final SubstituicoesRemoteDataSource substituicoesDataSource;

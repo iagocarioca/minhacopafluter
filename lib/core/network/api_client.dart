@@ -21,6 +21,8 @@ class ApiClient {
 
   final Dio dio;
   final AuthController _authController;
+  bool get isSeguidor => _authController.isSeguidor;
+  String? get tipoUsuario => _authController.tipoUsuario;
 
   static const String _retriedKey = 'auth_retry_done';
   static const String _retryFormDataKey = 'retry_form_data';

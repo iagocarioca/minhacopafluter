@@ -26,6 +26,8 @@ class User {
   final String? updatedAt;
 
   bool get isAdmin => tipoUsuario == 'admin';
+  bool get isOrganizador => tipoUsuario == 'organizador';
+  bool get isSeguidor => tipoUsuario == 'seguidor';
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(

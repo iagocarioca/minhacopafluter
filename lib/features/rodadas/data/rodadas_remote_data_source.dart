@@ -43,9 +43,12 @@ class RodadaFullResponse {
 
 class RodadasRemoteDataSource {
   RodadasRemoteDataSource({required ApiClient apiClient})
-    : _dio = apiClient.dio;
+    : _apiClient = apiClient,
+      _dio = apiClient.dio;
 
+  final ApiClient _apiClient;
   final Dio _dio;
+  bool get _isSeguidor => _apiClient.isSeguidor;
 
   Future<PaginatedResult<Rodada>> listRodadas({
     required int temporadaId,
@@ -53,8 +56,11 @@ class RodadasRemoteDataSource {
     required int perPage,
   }) async {
     try {
+      final path = _isSeguidor
+          ? '/api/seguidores/temporadas/$temporadaId/rodadas'
+          : '/api/peladas/temporadas/$temporadaId/rodadas';
       final response = await _dio.get<dynamic>(
-        '/api/peladas/temporadas/$temporadaId/rodadas',
+        path,
         queryParameters: <String, dynamic>{'page': page, 'per_page': perPage},
       );
 
