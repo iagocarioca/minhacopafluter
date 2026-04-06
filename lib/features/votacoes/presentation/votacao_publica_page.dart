@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontcopa_flutter/core/config/app_config.dart';
+import 'package:frontcopa_flutter/core/theme/app_theme.dart';
 import 'package:frontcopa_flutter/core/widgets/app_back_button.dart';
 import 'package:frontcopa_flutter/core/widgets/app_top_bar.dart';
 import 'package:frontcopa_flutter/core/widgets/cyber_card.dart';
@@ -17,6 +18,7 @@ class VotacaoPublicaPage extends StatefulWidget {
   const VotacaoPublicaPage({
     super.key,
     required this.votacaoId,
+    this.peladaId,
     required this.config,
     required this.votacoesDataSource,
     required this.rodadasDataSource,
@@ -24,6 +26,7 @@ class VotacaoPublicaPage extends StatefulWidget {
   });
 
   final int votacaoId;
+  final int? peladaId;
   final AppConfig config;
   final VotacoesRemoteDataSource votacoesDataSource;
   final RodadasRemoteDataSource rodadasDataSource;
@@ -265,8 +268,7 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
   }
 
   Future<void> _copiarLink() async {
-    final link =
-        '${widget.config.webAppUrl}/votacao/${widget.votacaoId}/publico';
+    final link = _publicLinkUri().toString();
     await Clipboard.setData(ClipboardData(text: link));
     if (!mounted) return;
     ScaffoldMessenger.of(
@@ -274,8 +276,23 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
     ).showSnackBar(const SnackBar(content: Text('Link copiado')));
   }
 
+  Uri _publicLinkUri() {
+    final queryParameters = <String, String>{};
+    if ((widget.peladaId ?? 0) > 0) {
+      queryParameters['pelada_id'] = '${widget.peladaId}';
+    }
+    return widget.config.webAppUrl.replace(
+      path: '/votacao/${widget.votacaoId}/publico',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = screenWidth > 960
+        ? (screenWidth - 920) / 2
+        : 16.0;
     final votacao = _votacao;
     Jogador? votante;
     for (final jogador in _jogadores) {
@@ -302,7 +319,11 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
 
     return Scaffold(
       appBar: AppTopBar(
-        leading: const AppBackButton(),
+        leading: AppBackButton(
+          fallbackLocation: (widget.peladaId ?? 0) > 0
+              ? '/peladas/${widget.peladaId}/publico'
+              : '/home',
+        ),
         title: const Text('Votacao publica'),
       ),
       body: _loading
@@ -317,7 +338,9 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.redAccent),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     FilledButton(
@@ -332,7 +355,12 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
               onRefresh: _load,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  16,
+                  horizontalPadding,
+                  20,
+                ),
                 children: [
                   CyberCard(
                     padding: const EdgeInsets.all(16),
@@ -342,23 +370,35 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
                           _tipoLabel(votacao?.tipo ?? ''),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.textPrimary,
                             fontWeight: FontWeight.w800,
                             fontSize: 22,
                           ),
                         ),
+                        if ((votacao?.titulo ?? '').trim().isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            votacao!.titulo!.trim(),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.textSoft,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 6),
                         Text(
                           'Aberta ate ${_formatDate(votacao?.fechaEm)}',
                           style: const TextStyle(
-                            color: Color(0xFF98A0AF),
+                            color: AppTheme.textMuted,
                             fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   if (votacao != null && votacao.status == 'encerrada')
                     CyberCard(
                       padding: const EdgeInsets.all(16),
@@ -483,6 +523,7 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
                       CyberCard(
                         padding: const EdgeInsets.all(14),
                         child: Text(
@@ -519,14 +560,15 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
                                 .toList(),
                           ),
                         ),
+                      const SizedBox(height: 12),
                       if (goleiros.isNotEmpty) ...[
                         const Padding(
-                          padding: EdgeInsets.only(top: 6, bottom: 8),
+                          padding: EdgeInsets.only(bottom: 8),
                           child: Text(
                             'Goleiros',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFFFF3B4D),
+                              color: AppTheme.accent,
                             ),
                           ),
                         ),
@@ -541,12 +583,12 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
                       ],
                       if (demaisJogadores.isNotEmpty) ...[
                         const Padding(
-                          padding: EdgeInsets.only(top: 16, bottom: 8),
+                          padding: EdgeInsets.only(top: 14, bottom: 8),
                           child: Text(
                             'Jogadores',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFFFF3B4D),
+                              color: AppTheme.accent,
                             ),
                           ),
                         ),
@@ -583,7 +625,7 @@ class _VotacaoPublicaPageState extends State<VotacaoPublicaPage> {
                         ),
                     ],
                   ],
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   OutlinedButton.icon(
                     onPressed: _copiarLink,
                     icon: const Icon(Icons.copy_rounded),
@@ -627,83 +669,115 @@ class _PlayersVoteGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      itemCount: jogadores.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 2.8,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemBuilder: (context, index) {
-        final jogador = jogadores[index];
-        final selected = selecionados.contains(jogador.id);
-        final disabled = _isDisabled(jogador.id);
-        final image = config.resolveApiImageUrl(jogador.fotoUrl);
-        return InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: disabled ? null : () => onToggle(jogador.id),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: selected
-                  ? const Color(0x24FF3B4D)
-                  : const Color(0xFF18151C),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.transparent),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundImage: image != null ? NetworkImage(image) : null,
-                  child: image == null
-                      ? const Icon(Icons.person, size: 13)
-                      : null,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 860
+            ? 4
+            : width >= 640
+            ? 3
+            : 2;
+        final aspectRatio = crossAxisCount == 2 ? 2.7 : 2.9;
+
+        return GridView.builder(
+          itemCount: jogadores.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: aspectRatio,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemBuilder: (context, index) {
+            final jogador = jogadores[index];
+            final selected = selecionados.contains(jogador.id);
+            final disabled = _isDisabled(jogador.id);
+            final image = config.resolveApiImageUrl(jogador.fotoUrl);
+
+            final backgroundColor = selected
+                ? AppTheme.primary.withValues(alpha: 0.14)
+                : disabled
+                ? AppTheme.surfaceAlt
+                : AppTheme.surface;
+            final borderColor = selected
+                ? AppTheme.primary.withValues(alpha: 0.55)
+                : AppTheme.surfaceBorder;
+            final titleColor = disabled
+                ? AppTheme.textMuted
+                : AppTheme.textPrimary;
+            final subtitleColor = disabled
+                ? AppTheme.textMuted
+                : AppTheme.textSoft;
+
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: disabled ? null : () => onToggle(jogador.id),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        _label(jogador),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: disabled
-                              ? const Color(0xFF5E6B63)
-                              : const Color(0xFFF7FAF5),
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: AppTheme.surfaceAlt,
+                        backgroundImage: image != null
+                            ? NetworkImage(image)
+                            : null,
+                        child: image == null
+                            ? const Icon(
+                                Icons.person,
+                                size: 13,
+                                color: AppTheme.textSoft,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _label(jogador),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: titleColor,
+                              ),
+                            ),
+                            Text(
+                              jogador.timeNome ?? 'Sem time',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: subtitleColor,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        jogador.timeNome ?? 'Sem time',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: disabled
-                              ? const Color(0xFF526058)
-                              : const Color(0xFF98A0AF),
+                      if (selected)
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          size: 18,
+                          color: AppTheme.primary,
                         ),
-                      ),
                     ],
                   ),
                 ),
-                if (selected)
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 18,
-                    color: Color(0xFFFF3B4D),
-                  ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

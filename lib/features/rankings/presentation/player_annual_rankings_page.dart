@@ -37,6 +37,10 @@ class PlayerAnnualRankingsPage extends StatefulWidget {
 }
 
 class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
+  static const int _sortTotal = 0;
+  static const int _sortGols = 1;
+  static const int _sortAssistencias = 2;
+
   bool _bootLoading = true;
   bool _rankingLoading = false;
   String? _error;
@@ -45,6 +49,8 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
   int _selectedYear = 0;
   int _selectedTemporadaId = 0;
   int _selectedRodadaId = 0;
+  int _selectedSort = _sortTotal;
+  bool _filtersExpanded = false;
 
   List<Temporada> _temporadas = const <Temporada>[];
   List<int> _years = const <int>[];
@@ -218,16 +224,7 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
         }
       }
 
-      final ranking = merged.values.toList()
-        ..sort((a, b) {
-          final byTotal = b.total.compareTo(a.total);
-          if (byTotal != 0) return byTotal;
-          final byGols = b.gols.compareTo(a.gols);
-          if (byGols != 0) return byGols;
-          final byAssists = b.assistencias.compareTo(a.assistencias);
-          if (byAssists != 0) return byAssists;
-          return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
-        });
+      final ranking = _sortRanking(merged.values.toList());
 
       if (!mounted || requestId != _requestSerial) return;
       setState(() => _ranking = ranking);
@@ -284,6 +281,47 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
     if (value == _selectedRodadaId) return;
     setState(() => _selectedRodadaId = value);
     await _loadRanking();
+  }
+
+  void _onSortSelected(int value) {
+    if (value == _selectedSort) return;
+    setState(() {
+      _selectedSort = value;
+      _ranking = _sortRanking(List<_PlayerAnnualEntry>.from(_ranking));
+    });
+  }
+
+  List<_PlayerAnnualEntry> _sortRanking(List<_PlayerAnnualEntry> ranking) {
+    ranking.sort((a, b) {
+      switch (_selectedSort) {
+        case _sortGols:
+          final byGols = b.gols.compareTo(a.gols);
+          if (byGols != 0) return byGols;
+          final byAssists = b.assistencias.compareTo(a.assistencias);
+          if (byAssists != 0) return byAssists;
+          final byTotal = b.total.compareTo(a.total);
+          if (byTotal != 0) return byTotal;
+          return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+        case _sortAssistencias:
+          final byAssists = b.assistencias.compareTo(a.assistencias);
+          if (byAssists != 0) return byAssists;
+          final byGols = b.gols.compareTo(a.gols);
+          if (byGols != 0) return byGols;
+          final byTotal = b.total.compareTo(a.total);
+          if (byTotal != 0) return byTotal;
+          return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+        case _sortTotal:
+        default:
+          final byTotal = b.total.compareTo(a.total);
+          if (byTotal != 0) return byTotal;
+          final byGols = b.gols.compareTo(a.gols);
+          if (byGols != 0) return byGols;
+          final byAssists = b.assistencias.compareTo(a.assistencias);
+          if (byAssists != 0) return byAssists;
+          return a.nome.toLowerCase().compareTo(b.nome.toLowerCase());
+      }
+    });
+    return ranking;
   }
 
   void _mergePlayers(
@@ -567,6 +605,33 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
     await _onRodadaSelected(selected);
   }
 
+  Future<void> _pickSort() async {
+    final options = <_IntOption>[
+      const _IntOption(
+        value: _sortTotal,
+        label: 'Geral (contribuicoes)',
+        helper: 'Ordena por gols + assistencias',
+      ),
+      const _IntOption(
+        value: _sortGols,
+        label: 'Mais gols',
+        helper: 'Prioriza artilheiros',
+      ),
+      const _IntOption(
+        value: _sortAssistencias,
+        label: 'Mais assistencias',
+        helper: 'Prioriza lideres em passes para gol',
+      ),
+    ];
+    final selected = await _showFilterSheet(
+      title: 'Ordenar jogadores por',
+      selectedValue: _selectedSort,
+      options: options,
+    );
+    if (selected == null) return;
+    _onSortSelected(selected);
+  }
+
   String get _selectedYearLabel =>
       _selectedYear == 0 ? 'Todos os anos' : '$_selectedYear';
 
@@ -589,6 +654,29 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
     return _rodadaLabel(rodada.first);
   }
 
+  String get _selectedSortLabel {
+    switch (_selectedSort) {
+      case _sortGols:
+        return 'Mais gols';
+      case _sortAssistencias:
+        return 'Mais assistencias';
+      case _sortTotal:
+      default:
+        return 'Geral (contribuicoes)';
+    }
+  }
+
+  String get _filtersSummary {
+    return 'Ano: $_selectedYearLabel  •  '
+        'Temporada: $_selectedTemporadaLabel  •  '
+        'Rodada: $_selectedRodadaLabel  •  '
+        'Ordem: $_selectedSortLabel';
+  }
+
+  void _toggleFilters() {
+    setState(() => _filtersExpanded = !_filtersExpanded);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -598,6 +686,17 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
               '/peladas/${widget.peladaId}/temporadas/${widget.temporadaId}/rankings',
         ),
         title: const Text('Ranking anual'),
+        actions: [
+          IconButton(
+            tooltip: _filtersExpanded ? 'Ocultar filtros' : 'Mostrar filtros',
+            onPressed: _toggleFilters,
+            icon: Icon(
+              _filtersExpanded
+                  ? Icons.filter_alt_off_rounded
+                  : Icons.filter_alt_rounded,
+            ),
+          ),
+        ],
       ),
       body: _bootLoading
           ? const Center(child: CircularProgressIndicator())
@@ -619,50 +718,108 @@ class _PlayerAnnualRankingsPageState extends State<PlayerAnnualRankingsPage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   CyberCard(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Filtro do ranking',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.filter_alt_rounded,
+                              size: 18,
+                              color: AppTheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Filtros do ranking',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14.5,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _toggleFilters,
+                              child: Text(
+                                _filtersExpanded ? 'Ver menos' : 'Ver mais',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _filtersSummary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 11.8,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Refine por ano, temporada e rodada para analisar o desempenho.',
-                          style: TextStyle(
-                            color: AppTheme.textMuted,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _FilterSelector(
-                          label: 'Ano',
-                          value: _selectedYearLabel,
-                          icon: Icons.calendar_today_rounded,
-                          onTap: _pickYear,
-                        ),
-                        const SizedBox(height: 8),
-                        _FilterSelector(
-                          label: 'Temporada',
-                          value: _selectedTemporadaLabel,
-                          icon: Icons.emoji_events_rounded,
-                          onTap: _pickTemporada,
-                        ),
-                        const SizedBox(height: 8),
-                        _FilterSelector(
-                          label: 'Rodada',
-                          value: _selectedRodadaLabel,
-                          icon: Icons.flag_rounded,
-                          onTap: _selectedTemporadaId == 0 ? null : _pickRodada,
                         ),
                       ],
                     ),
                   ),
+                  if (_filtersExpanded) ...[
+                    const SizedBox(height: 10),
+                    CyberCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Filtro detalhado',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Refine por ano, temporada, rodada e tipo de ordenacao.',
+                            style: TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _FilterSelector(
+                            label: 'Ano',
+                            value: _selectedYearLabel,
+                            icon: Icons.calendar_today_rounded,
+                            onTap: _pickYear,
+                          ),
+                          const SizedBox(height: 8),
+                          _FilterSelector(
+                            label: 'Temporada',
+                            value: _selectedTemporadaLabel,
+                            icon: Icons.emoji_events_rounded,
+                            onTap: _pickTemporada,
+                          ),
+                          const SizedBox(height: 8),
+                          _FilterSelector(
+                            label: 'Rodada',
+                            value: _selectedRodadaLabel,
+                            icon: Icons.flag_rounded,
+                            onTap: _selectedTemporadaId == 0
+                                ? null
+                                : _pickRodada,
+                          ),
+                          const SizedBox(height: 8),
+                          _FilterSelector(
+                            label: 'Ordenar por',
+                            value: _selectedSortLabel,
+                            icon: Icons.sort_rounded,
+                            onTap: _pickSort,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   GridView.count(
                     crossAxisCount: 2,

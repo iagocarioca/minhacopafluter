@@ -365,8 +365,12 @@ GoRouter buildAppRouter({required AppServices services}) {
         path: '/votacao/:votacaoId/publico',
         builder: (context, state) {
           final votacaoId = _requiredInt(state.pathParameters['votacaoId']);
+          final peladaId = int.tryParse(
+            _safeQueryParam(state.uri, 'pelada_id'),
+          );
           return VotacaoPublicaPage(
             votacaoId: votacaoId,
+            peladaId: peladaId,
             config: config,
             votacoesDataSource: services.votacoesDataSource,
             rodadasDataSource: services.rodadasDataSource,
